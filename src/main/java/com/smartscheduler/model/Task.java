@@ -103,6 +103,7 @@ public abstract class Task {
         switch (type) {
             case STUDY:    return new StudyTask();
             case WORK:     return new WorkTask();
+            case CUSTOM:   return new CustomTask();
             case PERSONAL:
             default:       return new PersonalTask();
         }

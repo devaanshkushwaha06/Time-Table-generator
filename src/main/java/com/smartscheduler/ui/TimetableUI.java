@@ -114,7 +114,7 @@ public class TimetableUI extends JFrame {
     private final JComboBox<String> priorityFilter = new JComboBox<>(
             new String[]{"All", "HIGH", "MEDIUM", "LOW"});
     private final JComboBox<String> typeFilter = new JComboBox<>(
-            new String[]{"All", "STUDY", "WORK", "PERSONAL"});
+            new String[]{"All", "STUDY", "WORK", "PERSONAL", "CUSTOM"});
     private final JTextField dateFilter = new JTextField(10);
     private final JProgressBar completionBar = new JProgressBar(0, 100);
 
@@ -422,11 +422,15 @@ public class TimetableUI extends JFrame {
             updatingTaskModel = true;
             taskModel.setRowCount(0);
             for (Task t : all) {
+                int totalMin = t.getDurationMinutes();
+                String durationStr = (totalMin >= 60)
+                        ? (totalMin / 60) + "h " + (totalMin % 60) + "m"
+                        : totalMin + "m";
                 taskModel.addRow(new Object[]{
                     t.getStatus() == TaskStatus.COMPLETED,
                     t.getTaskId(), t.getTitle(), t.getTaskType(),
                     t.getPriority(), formatDateTime(t.getDeadline()),
-                    t.getDurationMinutes() + " min", t.getStatus()});
+                    durationStr, t.getStatus()});
             }
             completionBar.setValue((int) Math.round(tasks.completionPercent(user.getUserId())));
             completionBar.setString(completionBar.getValue() + "% complete");
@@ -453,8 +457,33 @@ public class TimetableUI extends JFrame {
         if (existing != null) {
             typ.setSelectedItem(existing.getTaskType());
         }
-        JTextField duration = new JTextField(existing == null ? "60"
-                : String.valueOf(existing.getDurationMinutes()), 6);
+
+        // Custom type name field (shown only when CUSTOM is selected)
+        JTextField customTypeName = new JTextField(16);
+        customTypeName.setVisible(typ.getSelectedItem() == TaskType.CUSTOM);
+        JLabel customTypeLabel = new JLabel("Custom Type Name:");
+        customTypeLabel.setVisible(typ.getSelectedItem() == TaskType.CUSTOM);
+        typ.addActionListener(ev -> {
+            boolean isCustom = typ.getSelectedItem() == TaskType.CUSTOM;
+            customTypeName.setVisible(isCustom);
+            customTypeLabel.setVisible(isCustom);
+            // Repack the dialog to adjust layout
+            java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(typ);
+            if (w != null) w.pack();
+        });
+
+        // Duration: hours + minutes spinners
+        int existingMin = existing == null ? 60 : existing.getDurationMinutes();
+        javax.swing.JSpinner durationHours = new javax.swing.JSpinner(
+                new javax.swing.SpinnerNumberModel(existingMin / 60, 0, 23, 1));
+        javax.swing.JSpinner durationMins = new javax.swing.JSpinner(
+                new javax.swing.SpinnerNumberModel(existingMin % 60, 0, 59, 1));
+        JPanel durationPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        durationPanel.add(durationHours);
+        durationPanel.add(new JLabel("hr"));
+        durationPanel.add(durationMins);
+        durationPanel.add(new JLabel("min"));
+
         JComboBox<TaskStatus> status = new JComboBox<>(TaskStatus.values());
         if (existing != null) {
             status.setSelectedItem(existing.getStatus());
@@ -471,7 +500,14 @@ public class TimetableUI extends JFrame {
         addRow(form, g, row++, "Deadline Time (HH:MM):", deadlineTime);
         addRow(form, g, row++, "Priority:", pri);
         addRow(form, g, row++, "Type:", typ);
-        addRow(form, g, row++, "Duration (minutes):", duration);
+        // Custom type name row (dynamic visibility)
+        g.gridx = 0; g.gridy = row; g.weightx = 0; g.fill = GridBagConstraints.NONE;
+        form.add(customTypeLabel, g);
+        g.gridx = 1; g.weightx = 1; g.fill = GridBagConstraints.HORIZONTAL;
+        form.add(customTypeName, g);
+        g.fill = GridBagConstraints.NONE;
+        row++;
+        addRow(form, g, row++, "Duration:", durationPanel);
         addRow(form, g, row++, "Status:", status);
 
         int ok = JOptionPane.showConfirmDialog(this, form,
@@ -483,10 +519,30 @@ public class TimetableUI extends JFrame {
 
         try {
             TaskType type = (TaskType) typ.getSelectedItem();
+
+            // Validate custom type name
+            if (type == TaskType.CUSTOM) {
+                String cName = customTypeName.getText().trim();
+                if (cName.isEmpty()) {
+                    JOptionPane.showMessageDialog(this,
+                            "Please enter a name for the custom task type.",
+                            "Input Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
+
             Task t = (existing == null) ? Task.forType(type) : existing;
             t.setUserId(user.getUserId());
-            t.setTitle(title.getText());
-            t.setDescription(desc.getText());
+            // If custom type, prepend the custom name to the title for identification
+            String taskTitle = title.getText().trim();
+            if (type == TaskType.CUSTOM) {
+                String cName = customTypeName.getText().trim();
+                t.setDescription((desc.getText() == null ? "" : desc.getText())
+                        + "\n[Custom Type: " + cName + "]");
+            } else {
+                t.setDescription(desc.getText());
+            }
+            t.setTitle(taskTitle);
             LocalDate d = LocalDate.parse(deadlineDate.getText().trim(), DATE_FMT);
             LocalTime tm = LocalTime.parse(deadlineTime.getText().trim(), TIME_FMT);
             LocalDateTime deadlineDt = LocalDateTime.of(d, tm);
@@ -507,7 +563,15 @@ public class TimetableUI extends JFrame {
 
             t.setDeadline(deadlineDt);
             t.setPriority((Priority) pri.getSelectedItem());
-            t.setDurationMinutes(Integer.parseInt(duration.getText().trim()));
+            int totalDuration = ((Integer) durationHours.getValue()) * 60
+                    + ((Integer) durationMins.getValue());
+            if (totalDuration <= 0) {
+                JOptionPane.showMessageDialog(this,
+                        "Duration must be at least 1 minute.",
+                        "Input Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            t.setDurationMinutes(totalDuration);
             t.setStatus(forceComplete ? TaskStatus.COMPLETED : (TaskStatus) status.getSelectedItem());
 
             if (existing == null) {
@@ -658,6 +722,12 @@ public class TimetableUI extends JFrame {
             try {
                 LocalDate day = LocalDate.parse(scheduleDate.getText().trim()).plusDays(1);
                 scheduleDate.setText(DATE_FMT.format(day));
+                // Clear stale timetable before generating for the new day
+                currentEntries = List.of();
+                updatingTtModel = true;
+                ttModel.setRowCount(0);
+                updatingTtModel = false;
+                // Generate fresh for tomorrow
                 generateAndSave(false);
             } catch (Exception ex) {
                 showError(ex);
@@ -698,14 +768,23 @@ public class TimetableUI extends JFrame {
                 return;
             }
 
+            // Find tasks already fully scheduled on previous days
+            java.util.Map<Integer, Long> priorScheduled =
+                    sched.scheduledMinutesBefore(user.getUserId(), day);
+
             List<Task> allPending = tasks.findPending(user.getUserId());
             List<Task> pending = new java.util.ArrayList<>();
             for (Task t : allPending) {
-                // "don't add previous task of the day" - filter out past-due tasks
-                // only tasks due on or after the scheduled day will be included
-                if (!t.getDeadline().toLocalDate().isBefore(day)) {
-                    pending.add(t);
+                // Only include tasks with deadline on or after this day
+                if (t.getDeadline().toLocalDate().isBefore(day)) {
+                    continue;
                 }
+                // Skip tasks that were already fully scheduled on earlier days
+                Long alreadyScheduled = priorScheduled.get(t.getTaskId());
+                if (alreadyScheduled != null && alreadyScheduled >= t.getDurationMinutes()) {
+                    continue;
+                }
+                pending.add(t);
             }
             if (pending.isEmpty()) {
                 JOptionPane.showMessageDialog(this,
@@ -1174,12 +1253,12 @@ public class TimetableUI extends JFrame {
         button.setBackground(new Color(24, 102, 173));
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
-        button.setFont(button.getFont().deriveFont(Font.BOLD));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 11));
         button.setOpaque(true);
         button.setContentAreaFilled(true);
         button.setBorderPainted(false);
         button.setRolloverEnabled(false);
-        button.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
         installHover(button, new Color(24, 102, 173), new Color(18, 86, 150));
         installPressColor(button, new Color(16, 70, 128));
     }
@@ -1188,13 +1267,14 @@ public class TimetableUI extends JFrame {
         button.setBackground(new Color(24, 102, 173));
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 11));
         button.setOpaque(true);
         button.setContentAreaFilled(true);
         button.setBorderPainted(false);
         button.setRolloverEnabled(false);
         button.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDER),
-                BorderFactory.createEmptyBorder(6, 12, 6, 12)));
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)));
         installHover(button, new Color(24, 102, 173), new Color(18, 86, 150));
         installPressColor(button, new Color(16, 70, 128));
     }
@@ -1268,6 +1348,12 @@ public class TimetableUI extends JFrame {
                 bg = bg.darker();
             }
             c.setBackground(bg);
+            // Add horizontal padding so text doesn't clip outside the row background
+            if (c instanceof javax.swing.JLabel) {
+                javax.swing.JLabel lbl = (javax.swing.JLabel) c;
+                lbl.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
+                lbl.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+            }
             return c;
         }
     }
@@ -1286,6 +1372,12 @@ public class TimetableUI extends JFrame {
                 bg = bg.darker();
             }
             c.setBackground(bg);
+            // Add horizontal padding for consistent text alignment
+            if (c instanceof javax.swing.JLabel) {
+                javax.swing.JLabel lbl = (javax.swing.JLabel) c;
+                lbl.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
+                lbl.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+            }
             return c;
         }
     }

@@ -337,6 +337,29 @@ public class SchedulerService implements Scheduler {
     }
 
     /**
+     * Returns the total scheduled minutes per task on days strictly before {@code day}.
+     * Used to avoid re-scheduling tasks that were already fully placed on earlier days.
+     */
+    public java.util.Map<Integer, Long> scheduledMinutesBefore(int userId, LocalDate day) throws SQLException {
+        String sql = "SELECT task_id, "
+                + "SUM(TIMESTAMPDIFF(MINUTE, start_time, end_time)) AS total_min "
+                + "FROM timetable "
+                + "WHERE user_id=? AND DATE(start_time) < ? "
+                + "GROUP BY task_id";
+        java.util.Map<Integer, Long> map = new java.util.HashMap<>();
+        try (Connection c = DatabaseConnection.get(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.setDate(2, Date.valueOf(day));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    map.put(rs.getInt("task_id"), rs.getLong("total_min"));
+                }
+            }
+        }
+        return map;
+    }
+
+    /**
      * Returns the first overlap pair found, or null if no conflict exists.
      */
     public static Timetable[] firstConflict(List<Timetable> entries) {

@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     deadline    DATETIME     NOT NULL,
     priority    ENUM('HIGH','MEDIUM','LOW')               NOT NULL DEFAULT 'MEDIUM',
     duration    INT                                       NOT NULL,
-    task_type   ENUM('STUDY','WORK','PERSONAL')           NOT NULL DEFAULT 'PERSONAL',
+    task_type   ENUM('STUDY','WORK','PERSONAL','CUSTOM')   NOT NULL DEFAULT 'PERSONAL',
     status      ENUM('PENDING','IN_PROGRESS','DELAYED','COMPLETED') NOT NULL DEFAULT 'PENDING',
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_tasks_user FOREIGN KEY (user_id)
@@ -44,6 +44,10 @@ ALTER TABLE tasks
 
 CREATE INDEX idx_tasks_user_status   ON tasks(user_id, status);
 CREATE INDEX idx_tasks_user_deadline ON tasks(user_id, deadline);
+
+ALTER TABLE tasks
+    MODIFY task_type ENUM('STUDY','WORK','PERSONAL','CUSTOM')
+    NOT NULL DEFAULT 'PERSONAL';
 
 -- ---------------------------------------------------------------------
 -- Timetable (generated schedule entries)
