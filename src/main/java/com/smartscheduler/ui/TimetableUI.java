@@ -94,6 +94,8 @@ public class TimetableUI extends JFrame {
     private boolean use24HourFormat;
     private final JTextField scheduleDate;
     private final JComboBox<String> timeFormatChoice;
+    private final JLabel rescheduledLabel = new JLabel();
+    private final JButton viewTomorrowBtn = new JButton("View Tomorrow's Timetable");
 
     // Tasks tab
     private final DefaultTableModel taskModel = new DefaultTableModel(
@@ -635,9 +637,40 @@ public class TimetableUI extends JFrame {
         buttonRow.add(backBtn);
         buttonRow.add(logoutBtn);
 
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setBackground(BG);
+        centerPanel.add(row1, BorderLayout.NORTH);
+
+        JPanel rescheduledPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
+        rescheduledPanel.setBackground(BG);
+
+        rescheduledLabel.setForeground(new Color(200, 80, 0));
+        rescheduledLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        rescheduledPanel.add(rescheduledLabel);
+
+        styleSecondaryButton(viewTomorrowBtn);
+        // Special styling for smaller button
+        viewTomorrowBtn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                BorderFactory.createEmptyBorder(2, 8, 2, 8)));
+        viewTomorrowBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        viewTomorrowBtn.addActionListener(e -> {
+            try {
+                LocalDate day = LocalDate.parse(scheduleDate.getText().trim()).plusDays(1);
+                scheduleDate.setText(DATE_FMT.format(day));
+                generateAndSave(false);
+            } catch (Exception ex) {
+                showError(ex);
+            }
+        });
+        rescheduledPanel.add(viewTomorrowBtn);
+
+        rescheduledPanel.setVisible(false);
+        centerPanel.add(rescheduledPanel, BorderLayout.CENTER);
+        centerPanel.add(buttonRow, BorderLayout.SOUTH);
+
         top.add(dateTitle, BorderLayout.NORTH);
-        top.add(row1, BorderLayout.CENTER);
-        top.add(buttonRow, BorderLayout.SOUTH);
+        top.add(centerPanel, BorderLayout.CENTER);
 
         panel.add(top, BorderLayout.NORTH);
 
@@ -648,6 +681,13 @@ public class TimetableUI extends JFrame {
     }
 
     private void generateAndSave(boolean regenerate) {
+        if (rescheduledLabel.getParent() != null) {
+            rescheduledLabel.getParent().setVisible(false);
+            if (rescheduledLabel.getParent().getParent() != null) {
+                rescheduledLabel.getParent().getParent().revalidate();
+                rescheduledLabel.getParent().getParent().repaint();
+            }
+        }
         try {
             LocalDate day = LocalDate.parse(scheduleDate.getText().trim());
             LocalTime from = parseTimeField(availStart);
@@ -658,7 +698,15 @@ public class TimetableUI extends JFrame {
                 return;
             }
 
-            List<Task> pending = tasks.findPending(user.getUserId());
+            List<Task> allPending = tasks.findPending(user.getUserId());
+            List<Task> pending = new java.util.ArrayList<>();
+            for (Task t : allPending) {
+                // "don't add previous task of the day" - filter out past-due tasks
+                // only tasks due on or after the scheduled day will be included
+                if (!t.getDeadline().toLocalDate().isBefore(day)) {
+                    pending.add(t);
+                }
+            }
             if (pending.isEmpty()) {
                 JOptionPane.showMessageDialog(this,
                         "No pending tasks to schedule. Add some first.");
@@ -725,9 +773,21 @@ public class TimetableUI extends JFrame {
                 // Show summary
                 StringBuilder summary = new StringBuilder();
                 if (!tasksToReschedule.isEmpty()) {
+                    List<String> rNames = new java.util.ArrayList<>();
                     summary.append("Rescheduled to tomorrow:\n");
                     for (Task t : tasksToReschedule) {
                         summary.append("  • ").append(t.getTitle()).append("\n");
+                        rNames.add(t.getTitle());
+                    }
+                    rescheduledLabel.setText("Tasks Rescheduled to Tomorrow: " + String.join(", ", rNames));
+                    rescheduledLabel.getParent().setVisible(true);
+                    rescheduledLabel.getParent().getParent().revalidate();
+                    rescheduledLabel.getParent().getParent().repaint();
+                } else {
+                    rescheduledLabel.getParent().setVisible(false);
+                    if (rescheduledLabel.getParent().getParent() != null) {
+                        rescheduledLabel.getParent().getParent().revalidate();
+                        rescheduledLabel.getParent().getParent().repaint();
                     }
                 }
                 if (!tasksToRemove.isEmpty()) {
@@ -910,6 +970,11 @@ public class TimetableUI extends JFrame {
     }
 
     private void refreshTimetable() {
+        if (rescheduledLabel.getParent() != null) {
+            rescheduledLabel.getParent().setVisible(false);
+            rescheduledLabel.getParent().getParent().revalidate();
+            rescheduledLabel.getParent().getParent().repaint();
+        }
         try {
             LocalDate day = LocalDate.parse(scheduleDate.getText().trim());
             renderTimetable(sched.loadForDay(user.getUserId(), day));
