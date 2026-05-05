@@ -134,25 +134,20 @@ public class SchedulerService implements Scheduler {
                     out.add(br);
                     cursor = cursor.plusMinutes(breakMinutes);
                 } else if (taskIdx < queue.size() - 1) {
-                    // Task is done, but there are more tasks
-                    long timeLeftAfterTask = ChronoUnit.MINUTES.between(cursor, windowEnd);
-
-                    // Next task needs: break (10 min) + at least one block (50 min)
-                    if (timeLeftAfterTask >= (breakMinutes + blockMaxMinutes)) {
-                        // Add 10-min break
-                        Timetable br = new Timetable(userId, -1, cursor,
-                                cursor.plusMinutes(breakMinutes));
+                    // Task is done, and there are more tasks. Snap to the next hour.
+                    LocalDateTime nextHour = cursor.truncatedTo(ChronoUnit.HOURS);
+                    if (cursor.getMinute() > 0 || cursor.getSecond() > 0) {
+                        nextHour = nextHour.plusHours(1);
+                    }
+                    if (nextHour.isAfter(windowEnd)) {
+                        nextHour = windowEnd;
+                    }
+                    if (nextHour.isAfter(cursor)) {
+                        Timetable br = new Timetable(userId, -1, cursor, nextHour);
                         br.setTaskTitle("Break");
                         br.setBreakBlock(true);
                         out.add(br);
-                        cursor = cursor.plusMinutes(breakMinutes);
-                    } else if (timeLeftAfterTask > 0) {
-                        // Fill remaining time with rest
-                        Timetable rest = new Timetable(userId, -1, cursor, windowEnd);
-                        rest.setTaskTitle("Rest");
-                        rest.setBreakBlock(true);
-                        out.add(rest);
-                        cursor = windowEnd;
+                        cursor = nextHour;
                     }
                 }
             }
@@ -244,20 +239,20 @@ public class SchedulerService implements Scheduler {
                     out.add(br);
                     cursor = cursor.plusMinutes(breakMinutes);
                 } else if (taskIdx < queue.size() - 1) {
-                    long timeLeftAfterTask = ChronoUnit.MINUTES.between(cursor, windowEnd);
-                    if (timeLeftAfterTask >= (breakMinutes + blockMaxMinutes)) {
-                        Timetable br = new Timetable(userId, -1, cursor,
-                                cursor.plusMinutes(breakMinutes));
+                    // Task is done, and there are more tasks. Snap to the next hour.
+                    LocalDateTime nextHour = cursor.truncatedTo(ChronoUnit.HOURS);
+                    if (cursor.getMinute() > 0 || cursor.getSecond() > 0) {
+                        nextHour = nextHour.plusHours(1);
+                    }
+                    if (nextHour.isAfter(windowEnd)) {
+                        nextHour = windowEnd;
+                    }
+                    if (nextHour.isAfter(cursor)) {
+                        Timetable br = new Timetable(userId, -1, cursor, nextHour);
                         br.setTaskTitle("Break");
                         br.setBreakBlock(true);
                         out.add(br);
-                        cursor = cursor.plusMinutes(breakMinutes);
-                    } else if (timeLeftAfterTask > 0) {
-                        Timetable rest = new Timetable(userId, -1, cursor, windowEnd);
-                        rest.setTaskTitle("Rest");
-                        rest.setBreakBlock(true);
-                        out.add(rest);
-                        cursor = windowEnd;
+                        cursor = nextHour;
                     }
                 }
             }
