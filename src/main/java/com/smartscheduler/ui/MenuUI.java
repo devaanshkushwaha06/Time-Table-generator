@@ -35,7 +35,7 @@ public class MenuUI extends JFrame {
         super("Smart Daily Timetable - Menu");
         this.user = user;
         buildUi();
-        setSize(500, 360);
+        setSize(540, 380);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
     }
@@ -149,7 +149,7 @@ public class MenuUI extends JFrame {
         b.setBorder(BorderFactory.createEmptyBorder(14, 22, 14, 22));
         b.setHorizontalAlignment(SwingConstants.LEFT);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        b.setPreferredSize(new Dimension(440, 80));
+        b.setPreferredSize(new Dimension(460, 90));
         installHover(b, bg, hoverBg);
         return b;
     }
