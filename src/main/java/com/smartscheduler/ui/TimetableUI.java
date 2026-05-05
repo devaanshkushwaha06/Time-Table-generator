@@ -120,11 +120,7 @@ public class TimetableUI extends JFrame {
             new String[] { "Done", "Time Slot", "Task", "Priority", "Status" }, 0) {
         @Override
         public boolean isCellEditable(int r, int c) {
-            if (c != TT_COL_DONE) {
-                return false;
-            }
-            String status = String.valueOf(getValueAt(r, TT_COL_STATUS));
-            return !"BREAK".equals(status);
+            return c == TT_COL_DONE;
         }
 
         @Override
@@ -1083,7 +1079,7 @@ public class TimetableUI extends JFrame {
         ttModel.setRowCount(0);
         for (Timetable t : entries) {
             ttModel.addRow(new Object[] {
-                    !t.isBreakBlock() && t.getTaskStatus() == TaskStatus.COMPLETED,
+                    t.getTaskStatus() == TaskStatus.COMPLETED,
                     t.slotLabel(use24HourFormat),
                     t.getTaskTitle() == null ? "" : t.getTaskTitle(),
                     t.isBreakBlock() ? "-"
@@ -1172,10 +1168,12 @@ public class TimetableUI extends JFrame {
                 return;
             }
             Timetable entry = currentEntries.get(row);
+            boolean done = Boolean.TRUE.equals(ttModel.getValueAt(row, TT_COL_DONE));
             if (entry.isBreakBlock()) {
+                entry.setTaskStatus(done ? TaskStatus.COMPLETED : TaskStatus.PENDING);
+                renderTimetable(currentEntries);
                 return;
             }
-            boolean done = Boolean.TRUE.equals(ttModel.getValueAt(row, TT_COL_DONE));
             try {
                 // Mark only THIS specific block as completed/pending
                 entry.setTaskStatus(done ? TaskStatus.COMPLETED : TaskStatus.PENDING);
