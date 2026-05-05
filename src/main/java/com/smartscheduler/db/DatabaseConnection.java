@@ -60,7 +60,8 @@ public final class DatabaseConnection {
         String serverUrl = stripDatabaseFromUrl(url);
 
         try (Connection c = DriverManager.getConnection(serverUrl, user, password); Statement s = c.createStatement()) {
-            s.execute("CREATE DATABASE IF NOT EXISTS `" + databaseName + "` DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_unicode_ci");
+            s.execute("CREATE DATABASE IF NOT EXISTS `" + databaseName
+                    + "` DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_unicode_ci");
         }
 
         String schemaSql = loadSchemaSql();
@@ -89,9 +90,9 @@ public final class DatabaseConnection {
             }
         }
 
-        for (Path candidate : new Path[]{
-            Paths.get("schema.sql"),
-            Paths.get("src", "main", "resources", "schema.sql")
+        for (Path candidate : new Path[] {
+                Paths.get("schema.sql"),
+                Paths.get("src", "main", "resources", "schema.sql")
         }) {
             if (Files.exists(candidate)) {
                 return Files.readString(candidate, StandardCharsets.UTF_8);

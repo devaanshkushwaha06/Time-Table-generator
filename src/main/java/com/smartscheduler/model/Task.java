@@ -21,10 +21,11 @@ public abstract class Task {
     private int durationMinutes;
     private TaskStatus status = TaskStatus.PENDING;
 
-    protected Task() { }
+    protected Task() {
+    }
 
     protected Task(int userId, String title, String description, LocalDateTime deadline,
-                   Priority priority, int durationMinutes) {
+            Priority priority, int durationMinutes) {
         this.userId = userId;
         setTitle(title);
         this.description = description;
@@ -55,13 +56,26 @@ public abstract class Task {
         return priority.weight() * 1000.0 + minutesToDeadline;
     }
 
-    public int getTaskId() { return taskId; }
-    public void setTaskId(int taskId) { this.taskId = taskId; }
+    public int getTaskId() {
+        return taskId;
+    }
 
-    public int getUserId() { return userId; }
-    public void setUserId(int userId) { this.userId = userId; }
+    public void setTaskId(int taskId) {
+        this.taskId = taskId;
+    }
 
-    public String getTitle() { return title; }
+    public int getUserId() {
+        return userId;
+    }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
     public void setTitle(String title) {
         if (title == null || title.trim().isEmpty()) {
             throw new IllegalArgumentException("Title cannot be empty");
@@ -69,18 +83,34 @@ public abstract class Task {
         this.title = title.trim();
     }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getDescription() {
+        return description;
+    }
 
-    public LocalDateTime getDeadline() { return deadline; }
-    public void setDeadline(LocalDateTime deadline) { this.deadline = deadline; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public Priority getPriority() { return priority; }
+    public LocalDateTime getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(LocalDateTime deadline) {
+        this.deadline = deadline;
+    }
+
+    public Priority getPriority() {
+        return priority;
+    }
+
     public void setPriority(Priority priority) {
         this.priority = (priority == null) ? Priority.MEDIUM : priority;
     }
 
-    public int getDurationMinutes() { return durationMinutes; }
+    public int getDurationMinutes() {
+        return durationMinutes;
+    }
+
     public void setDurationMinutes(int durationMinutes) {
         if (durationMinutes <= 0) {
             throw new IllegalArgumentException("Duration must be positive");
@@ -88,12 +118,16 @@ public abstract class Task {
         this.durationMinutes = durationMinutes;
     }
 
-    public TaskStatus getStatus() { return status; }
+    public TaskStatus getStatus() {
+        return status;
+    }
+
     public void setStatus(TaskStatus status) {
         this.status = (status == null) ? TaskStatus.PENDING : status;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return getTaskType() + "{id=" + taskId + ", title='" + title +
                 "', priority=" + priority + ", duration=" + durationMinutes + "m}";
     }
@@ -101,11 +135,15 @@ public abstract class Task {
     /** Factory: build the right concrete subclass from a stored TaskType value. */
     public static Task forType(TaskType type) {
         switch (type) {
-            case STUDY:    return new StudyTask();
-            case WORK:     return new WorkTask();
-            case CUSTOM:   return new CustomTask();
+            case STUDY:
+                return new StudyTask();
+            case WORK:
+                return new WorkTask();
+            case CUSTOM:
+                return new CustomTask();
             case PERSONAL:
-            default:       return new PersonalTask();
+            default:
+                return new PersonalTask();
         }
     }
 }

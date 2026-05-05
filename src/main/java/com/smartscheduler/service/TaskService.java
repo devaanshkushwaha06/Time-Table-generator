@@ -27,7 +27,8 @@ public class TaskService {
     public int create(Task t) throws SQLException {
         String sql = "INSERT INTO tasks(user_id, title, description, deadline, "
                 + "priority, duration, task_type, status) VALUES (?,?,?,?,?,?,?,?)";
-        try (Connection c = DatabaseConnection.get(); PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection c = DatabaseConnection.get();
+                PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             bindForWrite(ps, t);
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
@@ -58,8 +59,9 @@ public class TaskService {
     }
 
     public void delete(int userId, int taskId) throws SQLException {
-        try (Connection c = DatabaseConnection.get(); PreparedStatement ps = c.prepareStatement(
-                "DELETE FROM tasks WHERE task_id=? AND user_id=?")) {
+        try (Connection c = DatabaseConnection.get();
+                PreparedStatement ps = c.prepareStatement(
+                        "DELETE FROM tasks WHERE task_id=? AND user_id=?")) {
             ps.setInt(1, taskId);
             ps.setInt(2, userId);
             ps.executeUpdate();
@@ -71,8 +73,9 @@ public class TaskService {
     }
 
     public void updateStatus(int userId, int taskId, TaskStatus status) throws SQLException {
-        try (Connection c = DatabaseConnection.get(); PreparedStatement ps = c.prepareStatement(
-                "UPDATE tasks SET status=? WHERE task_id=? AND user_id=?")) {
+        try (Connection c = DatabaseConnection.get();
+                PreparedStatement ps = c.prepareStatement(
+                        "UPDATE tasks SET status=? WHERE task_id=? AND user_id=?")) {
             ps.setString(1, status.name());
             ps.setInt(2, taskId);
             ps.setInt(3, userId);
