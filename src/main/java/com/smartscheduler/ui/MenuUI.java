@@ -113,8 +113,8 @@ public class MenuUI extends JFrame {
         logoutBtn.setOpaque(true);
         logoutBtn.setContentAreaFilled(true);
         logoutBtn.setBorderPainted(false);
-        logoutBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        logoutBtn.setBorder(BorderFactory.createEmptyBorder(7, 18, 7, 18));
+        logoutBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        logoutBtn.setBorder(BorderFactory.createEmptyBorder(10, 24, 10, 24));
         logoutBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         logoutBtn.addActionListener(e -> {
             new LoginUI().setVisible(true);

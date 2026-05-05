@@ -153,6 +153,11 @@ public class TimetableUI extends JFrame {
         this.use24HourFormat = use24HourFormat;
         this.scheduleDate = new JTextField(initialDate.toString(), 10);
         this.timeFormatChoice = new JComboBox<>(new String[] { "12 Hour", "24 Hour" });
+        Font inputFont = new Font("Segoe UI", Font.PLAIN, 13);
+        this.scheduleDate.setFont(inputFont);
+        this.availStart.setFont(inputFont);
+        this.availEnd.setFont(inputFont);
+        this.timeFormatChoice.setFont(inputFont);
         this.timeFormatChoice.setSelectedIndex(use24HourFormat ? 1 : 0);
         this.timeFormatChoice.addActionListener(e -> applyTimeFormat(timeFormatChoice.getSelectedIndex() == 1));
 
@@ -328,7 +333,8 @@ public class TimetableUI extends JFrame {
         logoutBtn.setOpaque(true);
         logoutBtn.setContentAreaFilled(true);
         logoutBtn.setBorderPainted(false);
-        logoutBtn.setFont(logoutBtn.getFont().deriveFont(Font.BOLD, 13f));
+        logoutBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        logoutBtn.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
         logoutBtn.addActionListener(e -> {
             new LoginUI().setVisible(true);
             dispose();
@@ -695,6 +701,8 @@ public class TimetableUI extends JFrame {
         logoutBtn.setOpaque(true);
         logoutBtn.setContentAreaFilled(true);
         logoutBtn.setBorderPainted(false);
+        logoutBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        logoutBtn.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
         logoutBtn.addActionListener(e -> {
             new LoginUI().setVisible(true);
             dispose();
@@ -1141,6 +1149,60 @@ public class TimetableUI extends JFrame {
     }
 
     private void installTableListeners() {
+        taskTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (javax.swing.SwingUtilities.isRightMouseButton(e)) {
+                    int row = taskTable.rowAtPoint(e.getPoint());
+                    if (row >= 0) {
+                        taskTable.setRowSelectionInterval(row, row);
+                        Task t = selectedTask();
+                        if (t != null) {
+                            javax.swing.JOptionPane.showMessageDialog(TimetableUI.this,
+                                    t.getDescription() == null || t.getDescription().trim().isEmpty() 
+                                            ? "No description available." : t.getDescription(),
+                                    "Description: " + t.getTitle(),
+                                    javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    }
+                }
+            }
+        });
+
+        ttTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (javax.swing.SwingUtilities.isRightMouseButton(e)) {
+                    int row = ttTable.rowAtPoint(e.getPoint());
+                    if (row >= 0 && row < currentEntries.size()) {
+                        ttTable.setRowSelectionInterval(row, row);
+                        Timetable entry = currentEntries.get(row);
+                        if (entry.isBreakBlock()) {
+                            javax.swing.JOptionPane.showMessageDialog(TimetableUI.this,
+                                    "Take a break and relax!",
+                                    "Break Time",
+                                    javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                            return;
+                        }
+                        try {
+                            Task t = tasks.findAll(user.getUserId()).stream()
+                                    .filter(task -> task.getTaskId() == entry.getTaskId())
+                                    .findFirst().orElse(null);
+                            if (t != null) {
+                                javax.swing.JOptionPane.showMessageDialog(TimetableUI.this,
+                                        t.getDescription() == null || t.getDescription().trim().isEmpty() 
+                                                ? "No description available." : t.getDescription(),
+                                        "Description: " + t.getTitle(),
+                                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                            }
+                        } catch (java.sql.SQLException ex) {
+                            showError(ex);
+                        }
+                    }
+                }
+            }
+        });
+
         taskModel.addTableModelListener(e -> {
             if (updatingTaskModel || e.getColumn() != TASK_COL_DONE || e.getFirstRow() < 0) {
                 return;
@@ -1267,12 +1329,12 @@ public class TimetableUI extends JFrame {
         button.setBackground(new Color(24, 102, 173));
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
         button.setOpaque(true);
         button.setContentAreaFilled(true);
         button.setBorderPainted(false);
         button.setRolloverEnabled(false);
-        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
         installHover(button, new Color(24, 102, 173), new Color(18, 86, 150));
         installPressColor(button, new Color(16, 70, 128));
     }
@@ -1281,14 +1343,14 @@ public class TimetableUI extends JFrame {
         button.setBackground(new Color(24, 102, 173));
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
         button.setOpaque(true);
         button.setContentAreaFilled(true);
         button.setBorderPainted(false);
         button.setRolloverEnabled(false);
         button.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDER),
-                BorderFactory.createEmptyBorder(5, 10, 5, 10)));
+                BorderFactory.createEmptyBorder(8, 14, 8, 14)));
         installHover(button, new Color(24, 102, 173), new Color(18, 86, 150));
         installPressColor(button, new Color(16, 70, 128));
     }
@@ -1304,6 +1366,7 @@ public class TimetableUI extends JFrame {
     private static JLabel label(String text) {
         JLabel l = new JLabel(text);
         l.setForeground(TEXT_DARK);
+        l.setFont(new Font("Segoe UI", Font.BOLD, 13));
         return l;
     }
 
