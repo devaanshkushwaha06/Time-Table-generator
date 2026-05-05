@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Run Smart Timetable",
+            "request": "launch",
+            "mainClass": "com.smartscheduler.Main",
+            "projectName": "smart-timetable",
+            "classPaths": [
+                "$Auto",
+                "src/main/resources"
+            ],
+            "console": "internalConsole"
+        }
+    ]
+}

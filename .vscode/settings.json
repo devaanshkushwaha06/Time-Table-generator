@@ -1,0 +1,10 @@
+{
+    "java.project.sourcePaths": ["src/main/java"],
+    "java.project.outputPath": "build/classes",
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar"
+    ],
+    "java.project.resourceFilters": [
+        "src/main/resources"
+    ]
+}
