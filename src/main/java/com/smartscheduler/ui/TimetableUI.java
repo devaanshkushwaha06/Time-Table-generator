@@ -667,23 +667,19 @@ public class TimetableUI extends JFrame {
         row1.add(timeFormatChoice);
 
         JButton genBtn = new JButton("Generate Timetable");
-        JButton regenBtn = new JButton("Regenerate");
         JButton viewBtn = new JButton("View Saved");
         JButton exportBtn = new JButton("Export PDF");
         stylePrimaryButton(genBtn);
-        styleSecondaryButton(regenBtn);
         styleSecondaryButton(viewBtn);
         styleSecondaryButton(exportBtn);
 
         genBtn.addActionListener(e -> generateAndSave(false));
-        regenBtn.addActionListener(e -> generateAndSave(true));
         viewBtn.addActionListener(e -> refreshTimetable());
         exportBtn.addActionListener(e -> exportPdf());
 
         JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
         buttonRow.setBackground(BG);
         buttonRow.add(genBtn);
-        buttonRow.add(regenBtn);
         buttonRow.add(viewBtn);
         buttonRow.add(exportBtn);
 
